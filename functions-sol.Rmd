@@ -1,0 +1,76 @@
+## Faszinierend funkelnd funktional -funzen muss es halt!
+
+Lesen Sie das ["Functions"](http://adv-r.had.co.nz/Functions.html)-Kapitel aus dem *Advanced R Programming*-Buch von Hadley Wickham aufmerksam durch.
+
+Bearbeiten Sie die folgenden von dort übernommenen Aufgaben:
+
+a)  Schreiben Sie die folgenden verwirrenden Funktionsaufrufe so um dass sie möglichst klar & einfach zu verstehen sind:
+
+```{r, 1a, eval=FALSE}
+set.seed(20141012)
+x <- sample(x = c(1:10, NA), size = 20, replace = TRUE)
+y <- runif(n = 20, min = 0, max = 1)
+cor(x = x, y = y, use = "pairwise.complete.obs", method = "kendall")
+```
+
+b)  Was gibt diese Funktion zurück? Warum? Welches Prinzip illustriert sie?
+
+```{r, 1b, eval=FALSE}
+f1 <- function(x = {
+    y <- 1
+    2
+  }, y = 0) {
+  x + y
+}
+```
+Fallunterscheidung:
+
+- Fall 1. x und y werden spezifiziert. f1 gibt für x + y und y + x die Summe der Inputwerte zurück, für c(y, x, y) den entsprechenden Vektor - die Defaults werden nie evaluiert.
+
+- Fall 2. Nur x wird spezifiziert. x behält den Inputwert; die einzige Auswertung von y erfolgt an der Stelle y = 0. x + y und y + x geben deshalb x zurück, c(y, x, y) liefert (0, x , 0).
+
+- Fall 3. Nur y wird spezifiziert. Jetzt wird's spannend. Für x + y wird der Default für x direkt evaluiert, deshalb wird y der Wert 1 zugewiesen, x wird auf 2 gesetzt; Rückgabe ist konstant 3. Bei y + x wird y zuerst evaluiert und mit dem Input identifiziert, dann erst der Default für x, sodass die zweite Zuweisung y <- 1 folgenlos bleibt - Rückgabe ist y + 2. Beim Vektor wird das erste y mit dem Inputwert für y identifiziert, dann erst wird der Default für x evaluiert. Dabei wird x zu 2 und y zu 1, sodass die Rückgabe (y, 2, 1) lautet. 
+
+Damit *lazy evaluation* par excellence.
+
+c)  Was gibt diese Funktion zurück? Warum? Welches Prinzip illustriert sie?
+
+```{r, 1c, eval=FALSE}
+f2 <- function(x = z) {
+  z <- 100
+  x
+}
+```
+
+Schon wieder *lazy evaluation*? f2 gibt 100 zurück, falls kein x spezifiziert wird, andernfalls x. Die Identifizierung von x mit z findet also nur statt, wenn auf den Default zurückgegriffen werden muss, und das geschieht erst bei der Rückgabe.
+
+d)  Schreiben sie eine *infix*-Funktion `%xor%` für `logical`-inputs, die eine XOR-Operation (entweder-oder-aber-nicht-beides) durchführt. Überprüfen Sie Ihre Funktion mit den folgenden Tests:
+
+```{r, code = readLines("test-functions-xor.R"), eval=FALSE}
+`%xor%` <- function(x, y) x & !y | !x & y
+```
+
+e)  Wie kann jeweils der Zustand von `options()` und `par()` abgespeichert und wiederhergestellt werden?
+
+Indem der gewünschte Wert im Funktionsruf einem Objekt zugewiesen und ein ``on.exit``-Statement hinzugefügt wird, das die ursprünglichen Settings wiederherstellt. Beispiel options: ``op <- options(digits = 7)`` ändert für die weiteren Operationen innerhalb der Funktion die Zahl der angezeigten gültigen Ziffern, weist aber gleichzeitig dem Objekt ``op`` den Default-Wert von 7 zu. ``on.exit(options(op), add = TRUE)`` sichert die Wiederherstellung der Default-Optionen nach Funktionsausführung (add-Statement, damit spätere exit handlers diese Operation nicht überschreiben).
+
+f)  Schreiben Sie eine Funktion die ein neues PDF-Grafikdevice öffnet, `plot` mit den übergebenen Argumenten aufruft und dann das zuvor geöffnete Grafikfenster wieder schließt, egal ob die übergebenen Argumente für `plot` funktioniert haben oder nicht.
+
+```{r, 1f, eval=FALSE}
+f3 <- function(...) {
+  plot(...)
+  on.exit(dev.off())
+}
+f3(x)
+```
+
+g)  Was gibt der folgende Code zurück? Warum? Was bedeuten die drei verschiedenen `c`s in der zweiten Zeile?
+
+```{r, 1g, eval=FALSE}
+c <- 10
+c(c = c)
+```
+
+Da Funktionen in R ebenfalls Objekte sind, gelten für sie die Scoping-Regeln genauso. Die Variable c (mit Wert 10) und die Funktion c befinden sich zwar beide im global environment, wenn jedoch eine Funkion aufgerufen wird, sucht R nur nach Funktionsvariablen und erkennt deshalb die Vektoroperation.
+
+Das erste c der zweiten Zeile ist der Vektoroperator, das zweite c ist der Name des folgenden Vektoreintrags, und das dritte der Vektoreintrag selbst - insgeamt somit ein Vektor, dessen erster und einziger Eintrag c heißt und den Wert 10 hat, welcher der globalen Variablen c zugewiesen worden ist.
